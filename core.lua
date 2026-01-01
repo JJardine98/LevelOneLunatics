@@ -90,6 +90,33 @@ local function ReceiveStats(sender, msg)
 end
 
 -- =========================
+-- Legacy Stats Command
+-- =========================
+SLASH_LOLLEGACY1 = "/lollegacy"
+SlashCmdList["LOLLEGACY"] = function(msg)
+    if LOL_PlayerDB.genesisLocked then
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Legacy stats are already locked!")
+        return
+    end
+    
+    local hk, quests = string.match(msg, "(%d+)%s+(%d+)")
+    if not hk or not quests then
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Usage: /lollegacy <HK> <Quests>")
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Example: /lollegacy 500 1200")
+        return
+    end
+    
+    LOL_PlayerDB.legacy = {
+        hk = tonumber(hk),
+        quests = tonumber(quests)
+    }
+    LOL_PlayerDB.genesisLocked = true
+    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Legacy stats saved and locked!")
+    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r HK: " .. hk .. " | Quests: " .. quests)
+    SendStats()
+end
+
+-- =========================
 -- Simple Stats Display
 -- =========================
 SLASH_LOLSTATS1 = "/lolstats"
