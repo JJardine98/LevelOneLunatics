@@ -1,0 +1,13 @@
+## Interface: 11200
+## Title: Level One Lunatics Guild Stats
+## Author: Jarod
+## Notes: 
+##   Level One Lunatics is a guild analytics addon for Turtle WoW.
+##   Features:
+##     - Tracks per-player stats: Honorable Kills, Quests Completed, Playtime
+##     - Interactive Genesis UI for one-time legacy stats entry
+##     - Hard-coded hub character "Solutions"
+##     - Guild-wide leaderboard in a scrollable UI
+## SavedVariables: LOL_PlayerDB, LOL_GuildDB
+
+core.lua
