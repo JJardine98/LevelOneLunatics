@@ -230,12 +230,11 @@ f:SetScript("OnEvent", function(self, event, ...)
         SendStats()
 
     elseif event == "CHAT_MSG_ADDON" then
-        local args = {...}
-        local prefix = args[1]
-        local msg    = args[2]
-        local channel= args[3]
-        local sender = args[4]
-
+        local prefix = select(1, ...)
+        local msg = select(2, ...)
+        local channel = select(3, ...)
+        local sender = select(4, ...)
+        
         if prefix == "LOL" and msg and sender then
             local nameOnly = sender:match("^([^%-]+)") or sender
             ReceiveStats(nameOnly, msg)
