@@ -18,7 +18,7 @@ end
 -- =========================
 local function PickActiveHub()
     if not IsInGuild() then return nil end
-
+    GuildRoster() -- Ensure roster is loaded
     local numTotal = GetNumGuildMembers()
     for _, hubName in ipairs(LOL_GuildDB.hubs) do
         for i = 1, numTotal do
@@ -35,9 +35,7 @@ end
 -- Hub / Sync Functions
 -- =========================
 local function SendStats()
-    if not LOL_PlayerDB.stats then
-        InitPlayer()
-    end
+    if not LOL_PlayerDB.stats then InitPlayer() end
     local hk = LOL_PlayerDB.stats.hk + (LOL_PlayerDB.legacy and LOL_PlayerDB.legacy.hk or 0)
     local quests = LOL_PlayerDB.stats.quests + (LOL_PlayerDB.legacy and LOL_PlayerDB.legacy.quests or 0)
     local timestamp = time()
@@ -48,33 +46,27 @@ local function SendStats()
         LOL_GuildDB.players[playerName] = { hk = hk, quests = quests, timestamp = timestamp }
     elseif activeHub then
         SendAddonMessage("LOL", msg, "WHISPER", activeHub)
-    else
-        -- No hub online, stats saved locally until a hub comes online
     end
+    -- Otherwise stats are saved locally until a hub comes online
 end
 
 local function ReceiveStats(sender, msg)
     if not sender or not msg then return end
-    -- Manual string splitting for Classic 1.12 (strsplit doesn't exist)
     local parts = {}
     local count = 0
     for part in string.gmatch(msg, "([^,]+)") do
         count = count + 1
         parts[count] = part
     end
-    if count < 3 then return end -- Invalid message format
+    if count < 3 then return end
     local hk = tonumber(parts[1])
     local quests = tonumber(parts[2])
     local ts = tonumber(parts[3])
-    if not hk or not quests or not ts then return end -- Invalid numbers
+    if not hk or not quests or not ts then return end
 
     local existing = LOL_GuildDB.players[sender]
     if not existing or ts > (existing.timestamp or 0) then
-        LOL_GuildDB.players[sender] = {
-            hk = hk,
-            quests = quests,
-            timestamp = ts
-        }
+        LOL_GuildDB.players[sender] = { hk = hk, quests = quests, timestamp = ts }
     end
 end
 
@@ -83,11 +75,12 @@ end
 -- =========================
 local function ShowGenesisUI()
     if LOL_PlayerDB.genesisLocked then return end
-    if LOL_GenesisFrame then return end -- Prevent creating multiple frames
+    if LOL_GenesisFrame then return end
 
     local frame = CreateFrame("Frame", "LOL_GenesisFrame", UIParent, "BasicFrameTemplateWithInset")
     frame:SetSize(250, 140)
     frame:SetPoint("CENTER")
+
     frame.title = frame:CreateFontString(nil, "OVERLAY")
     frame.title:SetFontObject("GameFontHighlight")
     frame.title:SetPoint("LEFT", frame.TitleBg, "LEFT", 5, 0)
@@ -98,11 +91,9 @@ local function ShowGenesisUI()
     hkBox:SetPoint("TOP", frame, "TOP", 0, -40)
     hkBox:SetAutoFocus(false)
     hkBox:SetText("0")
-    -- SetNumeric doesn't exist in Classic 1.12, validate on input
     hkBox:SetScript("OnChar", function(self, char)
         local text = self:GetText()
         if not tonumber(text) then
-            -- Remove the last character if it makes the text non-numeric
             self:SetText(text:sub(1, -2))
         end
     end)
@@ -115,11 +106,9 @@ local function ShowGenesisUI()
     questBox:SetPoint("TOP", hkBox, "BOTTOM", 0, -40)
     questBox:SetAutoFocus(false)
     questBox:SetText("0")
-    -- SetNumeric doesn't exist in Classic 1.12, validate on input
     questBox:SetScript("OnChar", function(self, char)
         local text = self:GetText()
         if not tonumber(text) then
-            -- Remove the last character if it makes the text non-numeric
             self:SetText(text:sub(1, -2))
         end
     end)
@@ -167,8 +156,9 @@ LOL_UI.content:SetSize(300, 1)
 LOL_UI.scrollFrame:SetScrollChild(LOL_UI.content)
 
 function LOL_UI:Update()
-    for _, child in pairs(self.content.children or {}) do
-        child:Hide()
+    self.content.children = self.content.children or {}
+    for _, child in ipairs(self.content.children) do
+        if child then child:Hide() end
     end
     self.content.children = {}
 
@@ -182,18 +172,14 @@ function LOL_UI:Update()
         btn:SetText(string.format("%s | HK: %d | Quests: %d", name, stats.hk, stats.quests))
 
         btn:SetScript("OnClick", function()
-            local info = string.format(
-                "Player: %s\nHonorable Kills: %d\nQuests Completed: %d", 
-                name, stats.hk, stats.quests
-            )
-            print("|cff00ff00[LOL]|r " .. info)
+            print("|cff00ff00[LOL]|r Player: " .. name .. " | HK: " .. stats.hk .. " | Quests: " .. stats.quests)
         end)
 
         btn:Show()
         table.insert(self.content.children, btn)
         y = y - 25
     end
-    self.content:SetHeight(-y + 5)
+    self.content:SetHeight(math.max(1, -y + 5))
 end
 
 SLASH_LOLUI1 = "/lolui"
@@ -228,6 +214,7 @@ f:RegisterEvent("PLAYER_LOGOUT")
 
 f:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_ENTERING_WORLD" then
+        RegisterAddonMessagePrefix("LOL") -- Classic-safe registration
         InitPlayer()
         ShowGenesisUI()
         print("|cff00ff00[LOL]|r Guild stats tracking active! Hubs: " .. table.concat(LOL_GuildDB.hubs, ", "))
@@ -238,9 +225,6 @@ f:SetScript("OnEvent", function(self, event, ...)
         SendStats()
 
     elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
-        -- In Classic 1.12, honor gain messages indicate HKs
-        -- Format: "You gain X honor points" or similar
-        -- This event fires when the player gets honor from a kill
         if not LOL_PlayerDB.stats then InitPlayer() end
         LOL_PlayerDB.stats.hk = LOL_PlayerDB.stats.hk + 1
         SendStats()
@@ -251,12 +235,11 @@ f:SetScript("OnEvent", function(self, event, ...)
         local msg    = args[2]
         local channel= args[3]
         local sender = args[4]
-    
+
         if prefix == "LOL" and msg and sender then
             local nameOnly = sender:match("^([^%-]+)") or sender
             ReceiveStats(nameOnly, msg)
         end
-    
 
     elseif event == "PLAYER_LOGOUT" then
         SendStats()
