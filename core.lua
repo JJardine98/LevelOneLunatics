@@ -57,10 +57,12 @@ local function ReceiveStats(sender, msg)
     if not sender or not msg then return end
     -- Manual string splitting for Classic 1.12 (strsplit doesn't exist)
     local parts = {}
+    local count = 0
     for part in string.gmatch(msg, "([^,]+)") do
-        table.insert(parts, part)
+        count = count + 1
+        parts[count] = part
     end
-    if #parts < 3 then return end -- Invalid message format
+    if count < 3 then return end -- Invalid message format
     local hk = tonumber(parts[1])
     local quests = tonumber(parts[2])
     local ts = tonumber(parts[3])
