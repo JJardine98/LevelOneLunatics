@@ -219,3 +219,10 @@ f:SetScript("OnEvent", function(self, event, ...)
     elseif event == "CHAT_MSG_ADDON" then
         local prefix, msg, channel, sender = ...
         if prefix == "LOL" then
+            ReceiveStats(sender, msg)
+        end
+
+    elseif event == "PLAYER_LOGOUT" then
+        SendStats()
+    end
+end)
