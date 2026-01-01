@@ -213,6 +213,8 @@ f:RegisterEvent("CHAT_MSG_ADDON")
 f:RegisterEvent("PLAYER_LOGOUT")
 
 f:SetScript("OnEvent", function(self, event, ...)
+    local arg1, arg2, arg3, arg4 = ...
+    
     if event == "PLAYER_ENTERING_WORLD" then
         RegisterAddonMessagePrefix("LOL") -- Classic-safe registration
         InitPlayer()
@@ -230,11 +232,11 @@ f:SetScript("OnEvent", function(self, event, ...)
         SendStats()
 
     elseif event == "CHAT_MSG_ADDON" then
-        local prefix = select(1, ...)
-        local msg = select(2, ...)
-        local channel = select(3, ...)
-        local sender = select(4, ...)
-        
+        local prefix = arg1
+        local msg    = arg2
+        local channel= arg3
+        local sender = arg4
+
         if prefix == "LOL" and msg and sender then
             local nameOnly = sender:match("^([^%-]+)") or sender
             ReceiveStats(nameOnly, msg)
