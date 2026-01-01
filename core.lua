@@ -278,7 +278,14 @@ eventFrame:SetScript("OnEvent", function()
         RegisterAddonMessagePrefix("LOL")
         InitPlayer()
         ShowGenesisUI()
-        local hubList = table.concat(LOL_GuildDB.hubs, ", ")
+        local hubList = ""
+        local i
+        for i = 1, table.getn(LOL_GuildDB.hubs) do
+            if i > 1 then
+                hubList = hubList .. ", "
+            end
+            hubList = hubList .. LOL_GuildDB.hubs[i]
+        end
         DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Guild stats tracking active! Hubs: " .. hubList)
 
     elseif event == "QUEST_TURNED_IN" then
