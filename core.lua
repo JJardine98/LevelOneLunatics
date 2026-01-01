@@ -189,15 +189,12 @@ LOL_UI:SetScript("OnDragStart", function() this:StartMoving() end)
 LOL_UI:SetScript("OnDragStop", function() this:StopMovingOrSizing() end)
 LOL_UI:Hide()
 
-local title = LOL_UI:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-title:SetPoint("TOP", 0, -15)
-title:SetText("Level One Lunatics Stats")
-
-local scrollFrame = CreateFrame("ScrollFrame", "LOL_ScrollFrame", LOL_UI, "UIPanelScrollFrameTemplate")
+local scrollFrame = CreateFrame("ScrollFrame", "LOL_ScrollFrame", LOL_UI)
 scrollFrame:SetPoint("TOPLEFT", LOL_UI, "TOPLEFT", 15, -35)
 scrollFrame:SetPoint("BOTTOMRIGHT", LOL_UI, "BOTTOMRIGHT", -30, 15)
 
-local content = CreateFrame("Frame", "LOL_Content", scrollFrame)
+local content = CreateFrame("Frame", "LOL_Content")
+content:SetParent(scrollFrame)
 content:SetWidth(300)
 content:SetHeight(1)
 scrollFrame:SetScrollChild(content)
