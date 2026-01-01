@@ -194,8 +194,8 @@ title:SetPoint("TOP", 0, -15)
 title:SetText("Level One Lunatics Stats")
 
 local scrollFrame = CreateFrame("ScrollFrame", "LOL_ScrollFrame", LOL_UI, "UIPanelScrollFrameTemplate")
-scrollFrame:SetPoint("TOPLEFT", 15, -35)
-scrollFrame:SetPoint("BOTTOMRIGHT", -30, 15)
+scrollFrame:SetPoint("TOPLEFT", LOL_UI, "TOPLEFT", 15, -35)
+scrollFrame:SetPoint("BOTTOMRIGHT", LOL_UI, "BOTTOMRIGHT", -30, 15)
 
 local content = CreateFrame("Frame", "LOL_Content", scrollFrame)
 content:SetWidth(300)
