@@ -246,12 +246,17 @@ f:SetScript("OnEvent", function(self, event, ...)
         SendStats()
 
     elseif event == "CHAT_MSG_ADDON" then
-        local prefix, msg, channel, sender = ...
-        if prefix == "LOL" and sender and msg then
-            -- Strip realm name if present (Classic compatibility)
-            sender = sender:match("^([^%-]+)") or sender
-            ReceiveStats(sender, msg)
+        local args = {...}
+        local prefix = args[1]
+        local msg    = args[2]
+        local channel= args[3]
+        local sender = args[4]
+    
+        if prefix == "LOL" and msg and sender then
+            local nameOnly = sender:match("^([^%-]+)") or sender
+            ReceiveStats(nameOnly, msg)
         end
+    
 
     elseif event == "PLAYER_LOGOUT" then
         SendStats()
