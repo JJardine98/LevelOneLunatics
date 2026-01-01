@@ -90,161 +90,18 @@ local function ReceiveStats(sender, msg)
 end
 
 -- =========================
--- Genesis UI
+-- Simple Stats Display
 -- =========================
-local function ShowGenesisUI()
-    if LOL_PlayerDB.genesisLocked then return end
-    if LOL_GenesisFrame then return end
-
-    local frame = CreateFrame("Frame", "LOL_GenesisFrame", UIParent)
-    frame:SetWidth(250)
-    frame:SetHeight(140)
-    frame:SetPoint("CENTER")
-    frame:SetBackdrop({
-        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-        tile = true, tileSize = 32, edgeSize = 32,
-        insets = { left = 11, right = 12, top = 12, bottom = 11 }
-    })
-    frame:EnableMouse(true)
-    frame:SetMovable(true)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnDragStart", function() this:StartMoving() end)
-    frame:SetScript("OnDragStop", function() this:StopMovingOrSizing() end)
-
-    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    title:SetPoint("TOP", 0, -15)
-    title:SetText("Enter Legacy Stats")
-
-    local hkLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    hkLabel:SetPoint("TOP", 0, -40)
-    hkLabel:SetText("Honorable Kills:")
-
-    local hkBox = CreateFrame("EditBox", "LOL_HKBox", frame, "InputBoxTemplate")
-    hkBox:SetWidth(100)
-    hkBox:SetHeight(25)
-    hkBox:SetPoint("TOP", 0, -55)
-    hkBox:SetAutoFocus(false)
-    hkBox:SetText("0")
-    hkBox:SetScript("OnChar", function()
-        local text = this:GetText()
-        if not tonumber(text) then
-            this:SetText(string.sub(text, 1, -2))
-        end
-    end)
-
-    local questLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    questLabel:SetPoint("TOP", hkBox, "BOTTOM", 0, -10)
-    questLabel:SetText("Quests Completed:")
-
-    local questBox = CreateFrame("EditBox", "LOL_QuestBox", frame, "InputBoxTemplate")
-    questBox:SetWidth(100)
-    questBox:SetHeight(25)
-    questBox:SetPoint("TOP", questLabel, "BOTTOM", 0, -5)
-    questBox:SetAutoFocus(false)
-    questBox:SetText("0")
-    questBox:SetScript("OnChar", function()
-        local text = this:GetText()
-        if not tonumber(text) then
-            this:SetText(string.sub(text, 1, -2))
-        end
-    end)
-
-    local btn = CreateFrame("Button", "LOL_SaveButton", frame, "UIPanelButtonTemplate")
-    btn:SetWidth(120)
-    btn:SetHeight(25)
-    btn:SetPoint("BOTTOM", 0, 15)
-    btn:SetText("Save Legacy Stats")
-    btn:SetScript("OnClick", function()
-        LOL_PlayerDB.legacy = {
-            hk = tonumber(LOL_HKBox:GetText()) or 0,
-            quests = tonumber(LOL_QuestBox:GetText()) or 0
-        }
-        LOL_PlayerDB.genesisLocked = true
-        LOL_GenesisFrame:Hide()
-        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Legacy stats saved and locked!")
-        SendStats()
-    end)
-
-    frame:Show()
-end
-
--- =========================
--- Leaderboard UI
--- =========================
-local LOL_UI = CreateFrame("Frame", "LOL_LeaderboardFrame", UIParent)
-LOL_UI:SetWidth(350)
-LOL_UI:SetHeight(400)
-LOL_UI:SetPoint("CENTER")
-LOL_UI:SetBackdrop({
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-    edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-    tile = true, tileSize = 32, edgeSize = 32,
-    insets = { left = 11, right = 12, top = 12, bottom = 11 }
-})
-LOL_UI:EnableMouse(true)
-LOL_UI:SetMovable(true)
-LOL_UI:RegisterForDrag("LeftButton")
-LOL_UI:SetScript("OnDragStart", function() this:StartMoving() end)
-LOL_UI:SetScript("OnDragStop", function() this:StopMovingOrSizing() end)
-LOL_UI:Hide()
-
-local scrollFrame = CreateFrame("ScrollFrame", "LOL_ScrollFrame", LOL_UI)
-scrollFrame:SetPoint("TOPLEFT", LOL_UI, "TOPLEFT", 15, -35)
-scrollFrame:SetPoint("BOTTOMRIGHT", LOL_UI, "BOTTOMRIGHT", -30, 15)
-
-local content = CreateFrame("Frame", "LOL_Content")
-content:SetParent(scrollFrame)
-content:SetWidth(300)
-content:SetHeight(1)
-scrollFrame:SetScrollChild(content)
-
-function LOL_UI:Update()
-    local i
-    if content.children then
-        for i = 1, table.getn(content.children) do
-            if content.children[i] then
-                content.children[i]:Hide()
-            end
-        end
-    end
-    content.children = {}
-
-    local yPos = -5
-    local name, stats
-    for name, stats in pairs(LOL_GuildDB.players) do
-        local btn = CreateFrame("Button", nil, content)
-        btn:SetWidth(280)
-        btn:SetHeight(20)
-        btn:SetPoint("TOPLEFT", 5, yPos)
-        btn:SetNormalFontObject("GameFontNormal")
-        btn:SetHighlightFontObject("GameFontHighlight")
-        
-        local displayText = string.format("%s | HK: %d | Quests: %d", name, stats.hk, stats.quests)
-        btn:SetText(displayText)
-
-        btn:SetScript("OnClick", function()
-            local msg = "|cff00ff00[LOL]|r Player: " .. name .. " | HK: " .. stats.hk .. " | Quests: " .. stats.quests
-            DEFAULT_CHAT_FRAME:AddMessage(msg)
-        end)
-
-        btn:Show()
-        table.insert(content.children, btn)
-        yPos = yPos - 25
+SLASH_LOLSTATS1 = "/lolstats"
+SlashCmdList["LOLSTATS"] = function()
+    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL] Your Stats:|r")
+    if LOL_PlayerDB.stats then
+        DEFAULT_CHAT_FRAME:AddMessage("HK: " .. LOL_PlayerDB.stats.hk .. " | Quests: " .. LOL_PlayerDB.stats.quests)
     end
     
-    local newHeight = -yPos + 5
-    if newHeight < 1 then newHeight = 1 end
-    content:SetHeight(newHeight)
-end
-
-SLASH_LOLUI1 = "/lolui"
-SlashCmdList["LOLUI"] = function()
-    if LOL_UI:IsShown() then
-        LOL_UI:Hide()
-    else
-        LOL_UI:Show()
-        LOL_UI:Update()
+    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL] Guild Stats:|r")
+    for name, stats in pairs(LOL_GuildDB.players) do
+        DEFAULT_CHAT_FRAME:AddMessage(name .. " - HK: " .. stats.hk .. " | Quests: " .. stats.quests)
     end
 end
 
@@ -274,26 +131,19 @@ eventFrame:SetScript("OnEvent", function()
     if event == "PLAYER_ENTERING_WORLD" then
         RegisterAddonMessagePrefix("LOL")
         InitPlayer()
-        ShowGenesisUI()
-        local hubList = ""
-        local i
-        for i = 1, table.getn(LOL_GuildDB.hubs) do
-            if i > 1 then
-                hubList = hubList .. ", "
-            end
-            hubList = hubList .. LOL_GuildDB.hubs[i]
-        end
-        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Guild stats tracking active! Hubs: " .. hubList)
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Stats tracking active! Type /lolstats to view stats.")
 
     elseif event == "QUEST_TURNED_IN" then
         if not LOL_PlayerDB.stats then InitPlayer() end
         LOL_PlayerDB.stats.quests = LOL_PlayerDB.stats.quests + 1
         SendStats()
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Quest completed! Total: " .. LOL_PlayerDB.stats.quests)
 
     elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
         if not LOL_PlayerDB.stats then InitPlayer() end
         LOL_PlayerDB.stats.hk = LOL_PlayerDB.stats.hk + 1
         SendStats()
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Honorable Kill! Total: " .. LOL_PlayerDB.stats.hk)
 
     elseif event == "CHAT_MSG_ADDON" then
         if arg1 == "LOL" and arg2 and arg4 then
