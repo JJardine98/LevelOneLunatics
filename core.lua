@@ -213,12 +213,13 @@ function LOL_UI:Update()
     end
     content.children = {}
 
-    local y = -5
+    local yPos = -5
+    local name, stats
     for name, stats in pairs(LOL_GuildDB.players) do
         local btn = CreateFrame("Button", nil, content)
         btn:SetWidth(280)
         btn:SetHeight(20)
-        btn:SetPoint("TOPLEFT", 5, y)
+        btn:SetPoint("TOPLEFT", 5, yPos)
         btn:SetNormalFontObject("GameFontNormal")
         btn:SetHighlightFontObject("GameFontHighlight")
         
@@ -232,10 +233,10 @@ function LOL_UI:Update()
 
         btn:Show()
         table.insert(content.children, btn)
-        y = y - 25
+        yPos = yPos - 25
     end
     
-    local newHeight = -y + 5
+    local newHeight = -yPos + 5
     if newHeight < 1 then newHeight = 1 end
     content:SetHeight(newHeight)
 end
