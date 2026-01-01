@@ -31,13 +31,18 @@ SlashCmdList["LOLSTATS"] = function()
 end
 
 -- =========================
--- Test Command
+-- Test Commands
 -- =========================
 SLASH_LOLTEST1 = "/loltest"
-SlashCmdList["LOLTEST"] = function()
+SlashCmdList["LOLTEST"] = function(msg)
     if not LOL_PlayerDB.stats then InitPlayer() end
-    LOL_PlayerDB.stats.quests = LOL_PlayerDB.stats.quests + 1
-    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Test quest added! Total: " .. LOL_PlayerDB.stats.quests)
+    if msg == "hk" then
+        LOL_PlayerDB.stats.hk = LOL_PlayerDB.stats.hk + 1
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Test HK added! Total: " .. LOL_PlayerDB.stats.hk)
+    else
+        LOL_PlayerDB.stats.quests = LOL_PlayerDB.stats.quests + 1
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Test quest added! Total: " .. LOL_PlayerDB.stats.quests)
+    end
 end
 
 -- =========================
@@ -46,15 +51,21 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 eventFrame:RegisterEvent("QUEST_TURNED_IN")
+eventFrame:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
 
 eventFrame:SetScript("OnEvent", function()
     if event == "PLAYER_ENTERING_WORLD" then
         InitPlayer()
-        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Loaded! Type /loltest to add a quest, /lolstats to view.")
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Loaded! /loltest, /loltest hk, /lolstats")
 
     elseif event == "QUEST_TURNED_IN" then
         if not LOL_PlayerDB.stats then InitPlayer() end
         LOL_PlayerDB.stats.quests = LOL_PlayerDB.stats.quests + 1
         DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Quest completed! Total: " .. LOL_PlayerDB.stats.quests)
+        
+    elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
+        if not LOL_PlayerDB.stats then InitPlayer() end
+        LOL_PlayerDB.stats.hk = LOL_PlayerDB.stats.hk + 1
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Honorable Kill! Total: " .. LOL_PlayerDB.stats.hk)
     end
 end)
