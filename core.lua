@@ -35,6 +35,9 @@ end
 -- Hub / Sync Functions
 -- =========================
 local function SendStats()
+    if not LOL_PlayerDB.stats then
+        InitPlayer()
+    end
     local hk = LOL_PlayerDB.stats.hk + (LOL_PlayerDB.legacy and LOL_PlayerDB.legacy.hk or 0)
     local quests = LOL_PlayerDB.stats.quests + (LOL_PlayerDB.legacy and LOL_PlayerDB.legacy.quests or 0)
     local timestamp = time()
@@ -51,10 +54,17 @@ local function SendStats()
 end
 
 local function ReceiveStats(sender, msg)
-    local hk, quests, ts = strsplit(",", msg)
-    hk = tonumber(hk)
-    quests = tonumber(quests)
-    ts = tonumber(ts)
+    if not sender or not msg then return end
+    -- Manual string splitting for Classic 1.12 (strsplit doesn't exist)
+    local parts = {}
+    for part in string.gmatch(msg, "([^,]+)") do
+        table.insert(parts, part)
+    end
+    if #parts < 3 then return end -- Invalid message format
+    local hk = tonumber(parts[1])
+    local quests = tonumber(parts[2])
+    local ts = tonumber(parts[3])
+    if not hk or not quests or not ts then return end -- Invalid numbers
 
     local existing = LOL_GuildDB.players[sender]
     if not existing or ts > (existing.timestamp or 0) then
@@ -71,6 +81,7 @@ end
 -- =========================
 local function ShowGenesisUI()
     if LOL_PlayerDB.genesisLocked then return end
+    if LOL_GenesisFrame then return end -- Prevent creating multiple frames
 
     local frame = CreateFrame("Frame", "LOL_GenesisFrame", UIParent, "BasicFrameTemplateWithInset")
     frame:SetSize(250, 140)
@@ -85,7 +96,14 @@ local function ShowGenesisUI()
     hkBox:SetPoint("TOP", frame, "TOP", 0, -40)
     hkBox:SetAutoFocus(false)
     hkBox:SetText("0")
-    hkBox:SetNumeric(true)
+    -- SetNumeric doesn't exist in Classic 1.12, validate on input
+    hkBox:SetScript("OnChar", function(self, char)
+        local text = self:GetText()
+        if not tonumber(text) then
+            -- Remove the last character if it makes the text non-numeric
+            self:SetText(text:sub(1, -2))
+        end
+    end)
     local hkLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     hkLabel:SetPoint("BOTTOM", hkBox, "TOP", 0, 0)
     hkLabel:SetText("Honorable Kills:")
@@ -95,7 +113,14 @@ local function ShowGenesisUI()
     questBox:SetPoint("TOP", hkBox, "BOTTOM", 0, -40)
     questBox:SetAutoFocus(false)
     questBox:SetText("0")
-    questBox:SetNumeric(true)
+    -- SetNumeric doesn't exist in Classic 1.12, validate on input
+    questBox:SetScript("OnChar", function(self, char)
+        local text = self:GetText()
+        if not tonumber(text) then
+            -- Remove the last character if it makes the text non-numeric
+            self:SetText(text:sub(1, -2))
+        end
+    end)
     local questLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     questLabel:SetPoint("BOTTOM", questBox, "TOP", 0, 0)
     questLabel:SetText("Quests Completed:")
@@ -195,7 +220,7 @@ end
 local f = CreateFrame("Frame")
 f:RegisterEvent("PLAYER_ENTERING_WORLD")
 f:RegisterEvent("QUEST_TURNED_IN")
-f:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+f:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
 f:RegisterEvent("CHAT_MSG_ADDON")
 f:RegisterEvent("PLAYER_LOGOUT")
 
@@ -206,19 +231,23 @@ f:SetScript("OnEvent", function(self, event, ...)
         print("|cff00ff00[LOL]|r Guild stats tracking active! Hubs: " .. table.concat(LOL_GuildDB.hubs, ", "))
 
     elseif event == "QUEST_TURNED_IN" then
+        if not LOL_PlayerDB.stats then InitPlayer() end
         LOL_PlayerDB.stats.quests = LOL_PlayerDB.stats.quests + 1
         SendStats()
 
-    elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
-        local _, subevent, _, _, srcName = CombatLogGetCurrentEventInfo()
-        if subevent == "PARTY_KILL" and srcName == playerName then
-            LOL_PlayerDB.stats.hk = LOL_PlayerDB.stats.hk + 1
-            SendStats()
-        end
+    elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
+        -- In Classic 1.12, honor gain messages indicate HKs
+        -- Format: "You gain X honor points" or similar
+        -- This event fires when the player gets honor from a kill
+        if not LOL_PlayerDB.stats then InitPlayer() end
+        LOL_PlayerDB.stats.hk = LOL_PlayerDB.stats.hk + 1
+        SendStats()
 
     elseif event == "CHAT_MSG_ADDON" then
         local prefix, msg, channel, sender = ...
-        if prefix == "LOL" then
+        if prefix == "LOL" and sender and msg then
+            -- Strip realm name if present (Classic compatibility)
+            sender = sender:match("^([^%-]+)") or sender
             ReceiveStats(sender, msg)
         end
 
