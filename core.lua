@@ -99,23 +99,36 @@ SlashCmdList["LOLLEGACY"] = function(msg)
         return
     end
     
-    local hk, quests = string.match(msg, "(%d+)%s+(%d+)")
-    if not hk or not quests then
+    local parts = {}
+    local count = 0
+    for part in string.gmatch(msg, "%S+") do
+        count = count + 1
+        parts[count] = part
+    end
+    
+    if count ~= 2 then
         DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Usage: /lollegacy <HK> <Quests>")
         DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Example: /lollegacy 500 1200")
         return
     end
     
+    local hk = tonumber(parts[1])
+    local quests = tonumber(parts[2])
+    
+    if not hk or not quests then
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Invalid numbers! Use: /lollegacy <HK> <Quests>")
+        return
+    end
+    
     LOL_PlayerDB.legacy = {
-        hk = tonumber(hk),
-        quests = tonumber(quests)
+        hk = hk,
+        quests = quests
     }
     LOL_PlayerDB.genesisLocked = true
     DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Legacy stats saved and locked!")
     DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r HK: " .. hk .. " | Quests: " .. quests)
     SendStats()
 end
-
 -- =========================
 -- Simple Stats Display
 -- =========================
