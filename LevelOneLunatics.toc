@@ -1,4 +1,4 @@
-## Interface: 11100
+## Interface: 11200
 ## Title: Level One Lunatics
 ## Author: Jarod
 ## Notes: Guild analytics addon for Turtle WoW
