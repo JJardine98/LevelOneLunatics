@@ -1,23 +1,23 @@
--- Addon namespace
-local addonName = ...
+-- Namespace
 local LOL = CreateFrame("Frame")
+local addonName = "LOL"
 
--- SavedVariables (pfUI‑style)
+-- SavedVariables
 LOL_DB = LOL_DB or {}
 
--- Ensure per‑character table
+-- Per-character stats
 local function PlayerDB()
     local name = UnitName("player")
     LOL_DB[name] = LOL_DB[name] or { hk = 0, quests = 0 }
     return LOL_DB[name]
 end
 
--- Pretty print
+-- Chat output
 local function Print(msg)
     DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00["..addonName.."]|r "..msg)
 end
 
--- Slash commands (pfUI‑style)
+-- Slash command
 SLASH_LOL1 = "/lol"
 SlashCmdList["LOL"] = function(cmd)
     local db = PlayerDB()
@@ -27,16 +27,15 @@ SlashCmdList["LOL"] = function(cmd)
         Print("Stats reset.")
         return
     end
-
     Print("HK: "..db.hk.." | Quests: "..db.quests)
 end
 
--- Event dispatcher (pfUI‑style)
+-- Event dispatcher
 LOL:SetScript("OnEvent", function(self, event, ...)
     local db = PlayerDB()
 
     if event == "PLAYER_LOGIN" then
-        Print("Loaded. /lol to view stats. Use /lol reset to reset.")
+        Print("Loaded. /lol to view stats. /lol reset to reset.")
 
     elseif event == "CHAT_MSG_COMBAT_FACTION_CHANGE" then
         local msg = ...
@@ -44,14 +43,18 @@ LOL:SetScript("OnEvent", function(self, event, ...)
             db.hk = db.hk + 1
             Print("Honorable kill! Total: "..db.hk)
         end
-
-    elseif event == "QUEST_COMPLETE" then
-        db.quests = db.quests + 1
-        Print("Quest completed! Total: "..db.quests)
     end
 end)
 
--- Register events (pfUI‑style)
+-- Quest hook (Vanilla)
+local OldGetQuestReward = GetQuestReward
+function GetQuestReward(...)
+    local db = PlayerDB()
+    db.quests = db.quests + 1
+    Print("Quest completed! Total: "..db.quests)
+    return OldGetQuestReward(...)
+end
+
+-- Register events
 LOL:RegisterEvent("PLAYER_LOGIN")
 LOL:RegisterEvent("CHAT_MSG_COMBAT_FACTION_CHANGE")
-LOL:RegisterEvent("QUEST_COMPLETE")
