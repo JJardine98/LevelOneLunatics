@@ -1,75 +1,57 @@
--- =========================
--- Databases
--- =========================
-LOL_PlayerDB = LOL_PlayerDB or {}
+-- Addon namespace
+local addonName = ...
+local LOL = CreateFrame("Frame")
 
-local playerName = UnitName("player")
+-- SavedVariables (pfUI‑style)
+LOL_DB = LOL_DB or {}
 
-local function Stats()
-    LOL_PlayerDB[playerName] = LOL_PlayerDB[playerName] or {
-        hk = 0,
-        quests = 0,
-        created = time()
-    }
-    return LOL_PlayerDB[playerName]
+-- Ensure per‑character table
+local function PlayerDB()
+    local name = UnitName("player")
+    LOL_DB[name] = LOL_DB[name] or { hk = 0, quests = 0 }
+    return LOL_DB[name]
 end
 
--- =========================
--- Chat Output
--- =========================
-local function LOL_Print(msg)
-    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r " .. msg)
+-- Pretty print
+local function Print(msg)
+    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00["..addonName.."]|r "..msg)
 end
 
--- =========================
--- Slash Commands
--- =========================
-SLASH_LOLSTATS1 = "/lolstats"
-SlashCmdList["LOLSTATS"] = function()
-    local s = Stats()
-    LOL_Print("Your Stats — HK: "..s.hk.." | Quests: "..s.quests)
-end
-
-SLASH_LOLTEST1 = "/loltest"
-SlashCmdList["LOLTEST"] = function(msg)
-    local s = Stats()
-    if msg == "hk" then
-        s.hk = s.hk + 1
-        LOL_Print("Test HK added! Total: "..s.hk)
-    else
-        s.quests = s.quests + 1
-        LOL_Print("Test Quest added! Total: "..s.quests)
+-- Slash commands (pfUI‑style)
+SLASH_LOL1 = "/lol"
+SlashCmdList["LOL"] = function(cmd)
+    local db = PlayerDB()
+    if cmd == "reset" then
+        db.hk = 0
+        db.quests = 0
+        Print("Stats reset.")
+        return
     end
+
+    Print("HK: "..db.hk.." | Quests: "..db.quests)
 end
 
--- =========================
--- Event Frame
--- =========================
-local f = CreateFrame("Frame")
-f:RegisterEvent("PLAYER_ENTERING_WORLD")
-f:RegisterEvent("CHAT_MSG_COMBAT_FACTION_CHANGE")
+-- Event dispatcher (pfUI‑style)
+LOL:SetScript("OnEvent", function(self, event, ...)
+    local db = PlayerDB()
 
-f:SetScript("OnEvent", function(self, event, msg)
-    if event == "PLAYER_ENTERING_WORLD" then
-        Stats()
-        LOL_Print("Loaded. Use /lolstats")
+    if event == "PLAYER_LOGIN" then
+        Print("Loaded. /lol to view stats. Use /lol reset to reset.")
 
     elseif event == "CHAT_MSG_COMBAT_FACTION_CHANGE" then
-        if string.find(msg or "", "honorable") then
-            local s = Stats()
-            s.hk = s.hk + 1
-            LOL_Print("Honorable Kill! Total: "..s.hk)
+        local msg = ...
+        if msg and msg:find("honorable") then
+            db.hk = db.hk + 1
+            Print("Honorable kill! Total: "..db.hk)
         end
+
+    elseif event == "QUEST_COMPLETE" then
+        db.quests = db.quests + 1
+        Print("Quest completed! Total: "..db.quests)
     end
 end)
 
--- =========================
--- Quest Turn-In Hook (Vanilla)
--- =========================
-local OldGetQuestReward = GetQuestReward
-function GetQuestReward(...)
-    local s = Stats()
-    s.quests = s.quests + 1
-    LOL_Print("Quest completed! Total: "..s.quests)
-    return OldGetQuestReward(...)
-end
+-- Register events (pfUI‑style)
+LOL:RegisterEvent("PLAYER_LOGIN")
+LOL:RegisterEvent("CHAT_MSG_COMBAT_FACTION_CHANGE")
+LOL:RegisterEvent("QUEST_COMPLETE")
