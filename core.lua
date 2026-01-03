@@ -1,8 +1,3 @@
--- =========================
--- Level One Lunatics: Minimal Turtle Core
--- pfUI-style Vanilla 1.12.1 compatible
--- =========================
-
 -- Namespace frame
 local LOL = CreateFrame("Frame")
 local addonName = "LOL"
@@ -23,9 +18,7 @@ local function Print(msg)
     DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00["..addonName.."]|r "..msg)
 end
 
--- =========================
 -- Slash commands
--- =========================
 SLASH_LOLSTATS1 = "/lolstats"
 SlashCmdList["LOLSTATS"] = function()
     local db = PlayerDB()
@@ -44,29 +37,24 @@ SlashCmdList["LOLTEST"] = function(msg)
     end
 end
 
--- =========================
--- Event dispatcher
--- =========================
-LOL:SetScript("OnEvent", function(self, event, ...)
+-- Event dispatcher (Vanilla-safe)
+LOL:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4)
     local db = PlayerDB()
 
     if event == "PLAYER_LOGIN" then
         Print("Addon loaded. /lolstats to view stats, /loltest hk or /loltest to increment manually.")
 
     elseif event == "CHAT_MSG_COMBAT_FACTION_CHANGE" then
-        local msg = ...
+        local msg = arg1
         -- Log the message so we know what Turtle sends
         Print("CHAT_MSG_COMBAT_FACTION_CHANGE fired: "..tostring(msg))
 
     elseif event == "QUEST_LOG_UPDATE" then
-        -- We will detect completed quests later
         Print("QUEST_LOG_UPDATE fired")
     end
 end)
 
--- =========================
 -- Register events
--- =========================
 LOL:RegisterEvent("PLAYER_LOGIN")
 LOL:RegisterEvent("CHAT_MSG_COMBAT_FACTION_CHANGE")
 LOL:RegisterEvent("QUEST_LOG_UPDATE")
