@@ -2,70 +2,74 @@
 -- Databases
 -- =========================
 LOL_PlayerDB = LOL_PlayerDB or {}
-LOL_GuildDB = LOL_GuildDB or {}
+LOL_GuildDB  = LOL_GuildDB  or { players = {} }
 
-if not LOL_GuildDB.players then
-    LOL_GuildDB.players = {}
-end
+local playerName = UnitName("player")
 
 -- =========================
 -- Initialize Player Stats
 -- =========================
 local function InitPlayer()
     if not LOL_PlayerDB.stats then
-        LOL_PlayerDB.stats = { hk = 0, quests = 0 }
+        LOL_PlayerDB.stats = {
+            hk = 0,
+            quests = 0,
+            created = time()
+        }
     end
 end
 
 -- =========================
--- Simple Stats Display
+-- Chat Output
+-- =========================
+local function LOL_Print(msg)
+    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r " .. msg)
+end
+
+-- =========================
+-- Slash Commands
 -- =========================
 SLASH_LOLSTATS1 = "/lolstats"
 SlashCmdList["LOLSTATS"] = function()
-    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL] Your Stats:|r")
-    if LOL_PlayerDB.stats then
-        DEFAULT_CHAT_FRAME:AddMessage("HK: " .. LOL_PlayerDB.stats.hk .. " | Quests: " .. LOL_PlayerDB.stats.quests)
-    else
-        DEFAULT_CHAT_FRAME:AddMessage("No stats yet!")
-    end
+    InitPlayer()
+    LOL_Print("Your Stats — HK: "..LOL_PlayerDB.stats.hk.." | Quests: "..LOL_PlayerDB.stats.quests)
 end
 
--- =========================
--- Test Commands
--- =========================
 SLASH_LOLTEST1 = "/loltest"
 SlashCmdList["LOLTEST"] = function(msg)
-    if not LOL_PlayerDB.stats then InitPlayer() end
+    InitPlayer()
     if msg == "hk" then
         LOL_PlayerDB.stats.hk = LOL_PlayerDB.stats.hk + 1
-        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Test HK added! Total: " .. LOL_PlayerDB.stats.hk)
+        LOL_Print("Test HK added! Total: "..LOL_PlayerDB.stats.hk)
     else
         LOL_PlayerDB.stats.quests = LOL_PlayerDB.stats.quests + 1
-        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Test quest added! Total: " .. LOL_PlayerDB.stats.quests)
+        LOL_Print("Test Quest added! Total: "..LOL_PlayerDB.stats.quests)
     end
 end
 
 -- =========================
 -- Event Frame
 -- =========================
-local eventFrame = CreateFrame("Frame")
-eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-eventFrame:RegisterEvent("QUEST_TURNED_IN")
-eventFrame:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
+local f = CreateFrame("Frame")
+f:RegisterEvent("PLAYER_ENTERING_WORLD")
+f:RegisterEvent("QUEST_COMPLETE")
+f:RegisterEvent("CHAT_MSG_COMBAT_FACTION_CHANGE")
 
-eventFrame:SetScript("OnEvent", function()
+f:SetScript("OnEvent", function(self, event, msg)
     if event == "PLAYER_ENTERING_WORLD" then
         InitPlayer()
-        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Loaded! /loltest, /loltest hk, /lolstats")
+        LOL_Print("Loaded. Use /lolstats")
 
-    elseif event == "QUEST_TURNED_IN" then
-        if not LOL_PlayerDB.stats then InitPlayer() end
+    elseif event == "QUEST_COMPLETE" then
+        InitPlayer()
         LOL_PlayerDB.stats.quests = LOL_PlayerDB.stats.quests + 1
-        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Quest completed! Total: " .. LOL_PlayerDB.stats.quests)
-        
-    elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
-        if not LOL_PlayerDB.stats then InitPlayer() end
-        LOL_PlayerDB.stats.hk = LOL_PlayerDB.stats.hk + 1
-        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Honorable Kill! Total: " .. LOL_PlayerDB.stats.hk)
+        LOL_Print("Quest completed! Total: "..LOL_PlayerDB.stats.quests)
+
+    elseif event == "CHAT_MSG_COMBAT_FACTION_CHANGE" then
+        if string.find(msg or "", "honorable") then
+            InitPlayer()
+            LOL_PlayerDB.stats.hk = LOL_PlayerDB.stats.hk + 1
+            LOL_Print("Honorable Kill! Total: "..LOL_PlayerDB.stats.hk)
+        end
     end
 end)
