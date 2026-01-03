@@ -1,65 +1,85 @@
--- Namespace frame
-local LOL = CreateFrame("Frame")
-local addonName = "LOL"
-
--- SavedVariables
+-- =========================
+-- Databases
+-- =========================
 LOL_PlayerDB = LOL_PlayerDB or {}
-LOL_GuildDB = LOL_GuildDB or {}
+LOL_GuildDB = LOL_GuildDB or { players = {} }
 
--- Helper: per-character DB
-local function PlayerDB()
-    local name = UnitName("player")
-    LOL_PlayerDB[name] = LOL_PlayerDB[name] or { hk = 0, quests = 0 }
-    return LOL_PlayerDB[name]
+local playerName = UnitName("player")
+
+-- =========================
+-- Initialize Player Stats per character
+-- =========================
+local function InitPlayer()
+    if not LOL_PlayerDB[playerName] then
+        LOL_PlayerDB[playerName] = {
+            stats = {
+                hk = 0,
+                questsCompleted = 0
+            }
+        }
+    end
 end
 
--- Helper: chat output
-local function Print(msg)
-    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00["..addonName.."]|r "..msg)
-end
-
--- Slash commands
+-- =========================
+-- Slash Commands
+-- =========================
 SLASH_LOLSTATS1 = "/lolstats"
 SlashCmdList["LOLSTATS"] = function()
-    local db = PlayerDB()
-    Print("Stats — HK: "..db.hk.." | Quests: "..db.quests)
+    InitPlayer()
+    local stats = LOL_PlayerDB[playerName].stats
+    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL] Your Stats:|r")
+    DEFAULT_CHAT_FRAME:AddMessage("HK: " .. stats.hk .. " | Quests Completed: " .. stats.questsCompleted)
 end
 
 SLASH_LOLTEST1 = "/loltest"
 SlashCmdList["LOLTEST"] = function(msg)
-    local db = PlayerDB()
+    InitPlayer()
+    local stats = LOL_PlayerDB[playerName].stats
     if msg == "hk" then
-        db.hk = db.hk + 1
-        Print("Test HK added! Total: "..db.hk)
+        stats.hk = stats.hk + 1
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Test HK added! Total: " .. stats.hk)
     else
-        db.quests = db.quests + 1
-        Print("Test Quest added! Total: "..db.quests)
+        stats.questsCompleted = stats.questsCompleted + 1
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Test quest added! Total: " .. stats.questsCompleted)
     end
 end
 
--- Event dispatcher
-LOL:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4)
-    local db = PlayerDB()
+-- =========================
+-- Quest Log Tracking (PFQuest-style)
+-- =========================
+local function UpdateQuests()
+    InitPlayer()
+    local completed = 0
+    local numQuests = GetNumQuestLogEntries()
 
-    if event == "PLAYER_ENTERING_WORLD" then
-        Print("Addon loaded. /lolstats to view stats, /loltest hk or /loltest to increment manually.")
-
-    elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
-        local msg = arg1
-        if msg and msg:find("honorable kill") then
-            db.hk = db.hk + 1
-            Print("Honorable Kill! Total: "..db.hk)
+    for i = 1, numQuests do
+        local title, level, _, isHeader, isComplete = GetQuestLogTitle(i)
+        if not isHeader and isComplete == 1 then
+            completed = completed + 1
         end
     end
-end)
 
--- Register events
-LOL:RegisterEvent("PLAYER_ENTERING_WORLD")
-LOL:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
+    -- Only increment if new completions
+    if completed > LOL_PlayerDB[playerName].stats.questsCompleted then
+        local newCompleted = completed - LOL_PlayerDB[playerName].stats.questsCompleted
+        LOL_PlayerDB[playerName].stats.questsCompleted = completed
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r " .. newCompleted .. " new quest(s) detected! Total: " .. completed)
+    end
+end
 
--- Hook quest reward button for completions
-hooksecurefunc("QuestFrameCompleteButton_OnClick", function()
-    local db = PlayerDB()
-    db.quests = db.quests + 1
-    Print("Quest completed! Total: "..db.quests)
+-- =========================
+-- Event Frame
+-- =========================
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+eventFrame:RegisterEvent("QUEST_LOG_UPDATE") -- fires whenever the quest log changes
+
+eventFrame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4)
+    if event == "PLAYER_ENTERING_WORLD" then
+        InitPlayer()
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[LOL]|r Addon loaded! Use /lolstats or /loltest hk")
+        UpdateQuests()
+    elseif event == "QUEST_LOG_UPDATE" then
+        UpdateQuests()
+    end
 end)
