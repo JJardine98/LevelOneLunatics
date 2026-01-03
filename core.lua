@@ -37,9 +37,7 @@ SlashCmdList["LOLTEST"] = function(msg)
     end
 end
 
--- =========================
--- Event dispatcher (Vanilla-safe with debug)
--- =========================
+-- Event dispatcher
 LOL:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4)
     local db = PlayerDB()
 
@@ -48,23 +46,20 @@ LOL:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4)
 
     elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
         local msg = arg1
-        Print("|cff00ff00[LOL-DEBUG HK]|r "..tostring(msg))
-        -- Example detection:
-        -- if msg:find("honorable kill") then
-        --     db.hk = db.hk + 1
-        --     Print("Honorable Kill! Total: "..db.hk)
-        -- end
-
-    elseif event == "QUEST_COMPLETE" then
-        -- Quest turned in
-        Print("|cff00ff00[LOL-DEBUG QUEST]|r Quest turned in")
-        -- Increment manually for testing:
-        -- db.quests = db.quests + 1
-        -- Print("Quest completed! Total: "..db.quests)
+        if msg and msg:find("honorable kill") then
+            db.hk = db.hk + 1
+            Print("Honorable Kill! Total: "..db.hk)
+        end
     end
 end)
 
--- Register Turtle-friendly events
+-- Register events
 LOL:RegisterEvent("PLAYER_ENTERING_WORLD")
 LOL:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
-LOL:RegisterEvent("QUEST_COMPLETE")
+
+-- Hook quest reward button for completions
+hooksecurefunc("QuestFrameCompleteButton_OnClick", function()
+    local db = PlayerDB()
+    db.quests = db.quests + 1
+    Print("Quest completed! Total: "..db.quests)
+end)
