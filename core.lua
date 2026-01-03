@@ -37,22 +37,42 @@ SlashCmdList["LOLTEST"] = function(msg)
     end
 end
 
--- Event dispatcher (Vanilla-safe)
+-- =========================
+-- Event dispatcher (Vanilla-safe with debug)
+-- =========================
 LOL:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4)
     local db = PlayerDB()
 
+    -- Player login
     if event == "PLAYER_LOGIN" then
         Print("Addon loaded. /lolstats to view stats, /loltest hk or /loltest to increment manually.")
-
+    
+    -- Honorable kills
     elseif event == "CHAT_MSG_COMBAT_FACTION_CHANGE" then
         local msg = arg1
-        -- Log the message so we know what Turtle sends
-        Print("CHAT_MSG_COMBAT_FACTION_CHANGE fired: "..tostring(msg))
+        if msg then
+            -- Log every message to see what Turtle sends
+            Print("|cff00ff00[LOL-DEBUG HK]|r "..msg)
+            -- Example: detect HK based on server text later
+            -- if msg:find("honorable kill") then
+            --     db.hk = db.hk + 1
+            --     Print("Honorable Kill! Total: "..db.hk)
+            -- end
+        end
 
+    -- Quest log updates
     elseif event == "QUEST_LOG_UPDATE" then
-        Print("QUEST_LOG_UPDATE fired")
+        local numEntries, numQuests = GetNumQuestLogEntries()
+        Print("|cff00ff00[LOL-DEBUG QUEST]|r Total quests in log: "..numEntries)
+
+        -- Loop through quest log and print each quest title & completion
+        for i = 1, numEntries do
+            local title, _, _, isComplete = GetQuestLogTitle(i)
+            Print("Quest "..i..": "..title.." | Complete: "..tostring(isComplete))
+        end
     end
 end)
+
 
 -- Register events
 LOL:RegisterEvent("PLAYER_LOGIN")
