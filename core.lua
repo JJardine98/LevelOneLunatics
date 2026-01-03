@@ -43,38 +43,28 @@ end
 LOL:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4)
     local db = PlayerDB()
 
-    -- Player login
-    if event == "PLAYER_LOGIN" then
+    if event == "PLAYER_ENTERING_WORLD" then
         Print("Addon loaded. /lolstats to view stats, /loltest hk or /loltest to increment manually.")
-    
-    -- Honorable kills
-    elseif event == "CHAT_MSG_COMBAT_FACTION_CHANGE" then
+
+    elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
         local msg = arg1
-        if msg then
-            -- Log every message to see what Turtle sends
-            Print("|cff00ff00[LOL-DEBUG HK]|r "..msg)
-            -- Example: detect HK based on server text later
-            -- if msg:find("honorable kill") then
-            --     db.hk = db.hk + 1
-            --     Print("Honorable Kill! Total: "..db.hk)
-            -- end
-        end
+        Print("|cff00ff00[LOL-DEBUG HK]|r "..tostring(msg))
+        -- Example detection:
+        -- if msg:find("honorable kill") then
+        --     db.hk = db.hk + 1
+        --     Print("Honorable Kill! Total: "..db.hk)
+        -- end
 
-    -- Quest log updates
-    elseif event == "QUEST_LOG_UPDATE" then
-        local numEntries, numQuests = GetNumQuestLogEntries()
-        Print("|cff00ff00[LOL-DEBUG QUEST]|r Total quests in log: "..numEntries)
-
-        -- Loop through quest log and print each quest title & completion
-        for i = 1, numEntries do
-            local title, _, _, isComplete = GetQuestLogTitle(i)
-            Print("Quest "..i..": "..title.." | Complete: "..tostring(isComplete))
-        end
+    elseif event == "QUEST_COMPLETE" then
+        -- Quest turned in
+        Print("|cff00ff00[LOL-DEBUG QUEST]|r Quest turned in")
+        -- Increment manually for testing:
+        -- db.quests = db.quests + 1
+        -- Print("Quest completed! Total: "..db.quests)
     end
 end)
 
-
--- Register events
-LOL:RegisterEvent("PLAYER_LOGIN")
-LOL:RegisterEvent("CHAT_MSG_COMBAT_FACTION_CHANGE")
-LOL:RegisterEvent("QUEST_LOG_UPDATE")
+-- Register Turtle-friendly events
+LOL:RegisterEvent("PLAYER_ENTERING_WORLD")
+LOL:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
+LOL:RegisterEvent("QUEST_COMPLETE")
